@@ -1,16 +1,25 @@
 package org.example;
 
 import java.io.IOException;
+import java.time.Duration;
 
 public class App {
     public static void main( String[] args ) throws IOException, InterruptedException {
         final String API_KEY = "YOUR_API_KEY_HERE"; // Enter you API-key here, see https://developers.google.com/youtube/v3/getting-started for info on API-keys and Google Projects
-        final String PLAYLIST_ID = "PLDDl-WM3TJ4jaZTGNn8YjdYLvWriRDN3A"; // Shorter list (10 videos) for testing 1-page-response
-        final String PLAYLIST_ID_2 = "PLIPaB4hHh2xQ4Ns1BU6V_LfCfBynOG1y1"; // Longer list (69 videos) for testing multi-page-response
+        final String PLAYLIST_ID = "YOUR_PLAYLIST_ID_HERE"; // e.g. from https://www.youtube.com/playlist?list={PLAYLIST_ID} only the PLAYLIST_ID is needed
 
-        PlaylistLengthCalculator api = new PlaylistLengthCalculator(API_KEY, PLAYLIST_ID_2);
+        PlaylistLengthCalculator api = new PlaylistLengthCalculator(API_KEY, PLAYLIST_ID);
 
-        String idList = api.getPlaylistItems();
+        Duration duration = api.getTotalDuration();
+
+        long days = duration.toDays();
+        long hours = duration.toHours() % 24;
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.toSeconds() % 60;
+
+        String time = String.format("%d days, %d hours, %d minutes, %d seconds", days, hours, minutes, seconds);
+
+        System.out.println(time);
 
     }
 }
