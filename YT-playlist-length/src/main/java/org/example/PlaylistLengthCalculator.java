@@ -34,7 +34,7 @@ public class PlaylistLengthCalculator {
     public String getPlaylistItems() throws IOException, InterruptedException {
 
         // Comma-separated list of video-id's from results. Used to query specific video details later on
-        String idList = "";
+        StringBuilder idList = new StringBuilder();
 
         // The YouTube API can return a maximum of 50 items per request, followed by a token that can be used to query the next 50 items and so on
         String nextPageToken = "";
@@ -57,13 +57,19 @@ public class PlaylistLengthCalculator {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(response.body());
 
+            // Loop results and extract ID for every video, which is then added to comma-separated idList variable
+            for (JsonNode playlistItem : root.get("items")) {
+                idList.append(playlistItem.get("contentDetails").get("videoId").asText()).append(",");
+            }
+
             // Checks if there are more results (videos) available in future pages
             JsonNode nextPageTokenNode = root.get("nextPageToken");
             nextPageToken = (nextPageTokenNode != null ? nextPageTokenNode.asText() : null);
 
         } while (nextPageToken != null); // Keep sending requests while there are more results (videos) available in future pages
 
+        idList.deleteCharAt(idList.length()-1); // Removes trailing comma from end of string
 
-        return idList;
+        return idList.toString();
     }
 }
