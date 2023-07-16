@@ -1,7 +1,6 @@
 package org.example;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 public class App {
     public static void main( String[] args ) throws IOException, InterruptedException {
@@ -9,7 +8,9 @@ public class App {
         final String PLAYLIST_ID = "PLDDl-WM3TJ4jaZTGNn8YjdYLvWriRDN3A"; // Shorter list (10 videos) for testing 1-page-response
         final String PLAYLIST_ID_2 = "PLIPaB4hHh2xQ4Ns1BU6V_LfCfBynOG1y1"; // Longer list (69 videos) for testing multi-page-response
 
-        new PlaylistLengthCalculator(API_KEY, PLAYLIST_ID);
+        PlaylistLengthCalculator api = new PlaylistLengthCalculator(API_KEY, PLAYLIST_ID_2);
+
+        String idList = api.getPlaylistItems();
 
     }
 }
