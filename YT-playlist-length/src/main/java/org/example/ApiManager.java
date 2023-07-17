@@ -12,13 +12,13 @@ import java.time.Duration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class PlaylistLengthCalculator {
+public class ApiManager {
 
     // Base URLs
     private String playlistUrl = "https://www.googleapis.com/youtube/v3/playlistItems";
     private String videoUrl = "https://www.googleapis.com/youtube/v3/videos";
 
-    public PlaylistLengthCalculator(String apiKey, String playlistId) {
+    public ApiManager(String apiKey, String playlistId) {
 
         // Transforms any special characters to standardized UTF-8 format that is web-safe
         String encodedID = URLEncoder.encode(playlistId, StandardCharsets.UTF_8);
@@ -51,7 +51,8 @@ public class PlaylistLengthCalculator {
         // Used for Jackson data-bindings to map and traverse JSON responses
         ObjectMapper mapper = new ObjectMapper();
 
-        do {
+        // Keep sending requests while there are more results (videos) available in future pages
+        while (nextPageToken != null) {
 
             // Prepares and builds playlistItem-request, also adds eventual pageToken in multi-page-queries
             HttpRequest request = HttpRequest.newBuilder()
@@ -65,20 +66,12 @@ public class PlaylistLengthCalculator {
             // Parses response to traversable JSON object
             JsonNode root = mapper.readTree(response.body());
 
-            // Stores list of video-IDs from results. Used to query specific video details later on
-            StringBuilder idList = new StringBuilder();
-
-            // Loop results and extract ID for every video, which is then added to comma-separated idList
-            for (JsonNode playlistItem : root.get("items")) {
-                idList.append(playlistItem.get("contentDetails").get("videoId").asText()).append(",");
-            }
-
-            // Removes trailing comma from end of idList
-            idList.deleteCharAt(idList.length()-1);
-
-            // Checks if there are more results (videos) available in future pages
+            // Loop condition -> Checks if there are more results (videos) available in future pages
             JsonNode nextPageTokenNode = root.get("nextPageToken");
             nextPageToken = (nextPageTokenNode != null ? nextPageTokenNode.asText() : null);
+
+            // Extracts IDs from videos to prepare list as query parameter
+            String idList = getVideoIDs(root);
 
             // Prepares and builds videoList-request with list of IDs from current result set (from playlistItems)
             request = HttpRequest.newBuilder()
@@ -94,13 +87,29 @@ public class PlaylistLengthCalculator {
 
             // Loop video-results and extract duration from each item to add to totalDuration
             for (JsonNode video : root.get("items")) {
-                String durationString = video.get("contentDetails").get("duration").asText();
-                Duration duration = Duration.parse(durationString);
-                totalDuration = totalDuration.plus(duration);
+                String durationString = video.get("contentDetails").get("duration").asText(); // String in ISO 8601 duration format
+                Duration duration = Duration.parse(durationString); // Parses to duration object
+                totalDuration = totalDuration.plus(duration); // Adds current video duration to total duration
             }
-
-        } while (nextPageToken != null); // Keep sending requests while there are more results (videos) available in future pages
+        }
 
         return totalDuration;
+    }
+
+    // Extracts IDs from videos to prepare list as query parameter
+    private String getVideoIDs(JsonNode root) {
+
+        // List of video-IDs from results. Used to query specific video details later on
+        StringBuilder IDs = new StringBuilder();
+
+        // Loop results and extract ID for every video, which is then added to comma-separated IDs
+        for (JsonNode playlistItem : root.get("items")) {
+            IDs.append(playlistItem.get("contentDetails").get("videoId").asText()).append(",");
+        }
+
+        // Removes trailing comma from end of IDs
+        IDs.deleteCharAt(IDs.length()-1);
+
+        return IDs.toString();
     }
 }
